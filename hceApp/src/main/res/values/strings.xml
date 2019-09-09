@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">MyHostCardEmulator</string>
+    <string name="servicedesc">apdu service</string>
+</resources>

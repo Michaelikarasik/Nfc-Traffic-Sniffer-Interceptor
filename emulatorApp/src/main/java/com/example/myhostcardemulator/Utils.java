@@ -34,8 +34,8 @@ class Utils {
     static String toHex(byte[] byteArray){
         StringBuffer result = new StringBuffer();
 
-        for(byte it : byteArray){
-            int octet = it;
+        for(byte curByte : byteArray){
+            int octet = curByte;
             int firstIndex = (octet & 0xF0) >>> 4;
             int secondIndex = octet & 0x0F;
             result.append(HEX_CHARS_ARRAY[firstIndex]);

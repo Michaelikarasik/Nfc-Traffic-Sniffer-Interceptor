@@ -18,7 +18,6 @@ class HostCardEmulatorService extends HostApduService {
     final String STATUS_FAILED = "6F00";
 
     String globalResponse = "";
-    String globalCommand = "";
 
     static ServerSocket serverSocket;
     static Socket socket;
@@ -37,6 +36,16 @@ class HostCardEmulatorService extends HostApduService {
      * and transmitting APDU queries.
      */
     private class ServerThread implements Runnable {
+
+        private String query;
+
+        /**
+         * Thread constructor
+         * @param query Query to send to card
+         */
+        public ServerThread(String query){
+            this.query = query;
+        }
 
         /**
          * Method for initializing the ServerSocket
@@ -67,13 +76,27 @@ class HostCardEmulatorService extends HostApduService {
                 DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 
                 Log.d(TAG, "writing");
-                out.writeUTF(globalCommand);
+                out.writeUTF(query);
 
                 Log.d(TAG, "reading");
                 globalResponse = inp.readUTF();
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    /**
+     * Initialize and start a new command sending thread
+     * @param query Query for thread to send
+     */
+    public void sendApduCommand(String query){
+        Thread commandSender = new Thread(new ServerThread(query));
+        try {
+            commandSender.start();
+            commandSender.join();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -91,14 +114,7 @@ class HostCardEmulatorService extends HostApduService {
          //ip = ((EditText) new MainActivity().findViewById(R.id.myTextInput)).getText().toString();
          //Log.d(TAG, "found ip " + ip);
          String hexCommandApdu = Utils.toHex(commandApdu);
-         globalCommand = hexCommandApdu;
-         Thread serverInit = new Thread(new ServerThread());
-         try {
-            serverInit.start();
-            serverInit.join();
-         } catch (Exception e) {
-             e.printStackTrace();
-         }
+         sendApduCommand(hexCommandApdu);
 
          return Utils.hexStringToByteArray(globalResponse);
      }

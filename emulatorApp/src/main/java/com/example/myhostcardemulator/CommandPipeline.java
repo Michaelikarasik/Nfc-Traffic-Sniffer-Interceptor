@@ -12,6 +12,7 @@ class methodCategory {
     protected int catNum;
     protected Method[] methodArr;
     protected String catName;
+    private static methodCategory category_instance = new methodCategory();
 
     /**
     * This class holds a method's name and the types of its params for use with Class.getMethod() method
@@ -119,6 +120,8 @@ class categoryList{
             return command.startsWith(comparison);
         }
     }
+
+
 }
 
 public class CommandPipeline {

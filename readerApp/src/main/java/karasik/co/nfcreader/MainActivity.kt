@@ -35,8 +35,8 @@ class MainActivity : AppCompatActivity(), NfcAdapter.ReaderCallback{
             if(!this@MainActivity::socket.isInitialized) {
                 while (true) {
                     try {
-                        Log.d("log", "trying to connect to " + SERVERPORT.toString())
-                        Thread.sleep(200)
+                        Log.d("log", "trying to connect to " + SERVERPORT.toString() + " at ip " + myip)
+                        Thread.sleep(100)
                         socket = Socket(myip, SERVERPORT)
                         Log.d("connected to", SERVERPORT.toString())
                         break
@@ -45,11 +45,11 @@ class MainActivity : AppCompatActivity(), NfcAdapter.ReaderCallback{
             }
 
             try {
+                val inp = DataInputStream(socket.getInputStream())
+                val out = DataOutputStream(socket.getOutputStream())
                 while (true) {
                     try {
                         Thread.sleep(200)
-                        val inp = DataInputStream(socket.getInputStream())
-                        val out = DataOutputStream(socket.getOutputStream())
                         var query = inp.readUTF()
                         var response = Utils.toHex(currentIsoDep.transceive(Utils.hexStringToByteArray(query)))
                         if(query.startsWith("948E000004")){

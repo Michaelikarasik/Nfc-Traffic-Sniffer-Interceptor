@@ -16,18 +16,17 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
 import android.system.Os.accept
+import android.widget.EditText
 import com.example.myhostcardemulator.HostCardEmulatorService.Companion.STATUS_FAILED
+import kotlinx.android.synthetic.main.activity_main.*
+import android.support.v7.app.AppCompatActivity
 
 class HostCardEmulatorService: HostApduService() {
 
-    var selectedRecord = ""
-    var total = ""
-    var SERVERPORT = 9753
-    var globalResponse = ""
-    var globalCommand = ""
-    lateinit var serverSocket : ServerSocket
-    lateinit var socket : Socket
-
+    /**
+     * Server
+     */
+    val SERVERPORT = 9753
     companion object {
         val TAG = "Host Card Emulator Log"
         val STATUS_SUCCESS = "9000"
@@ -37,52 +36,29 @@ class HostCardEmulatorService: HostApduService() {
         val SELECT_INS = "A4"
         val READ_RECORD = "B2"
         val DEFAULT_CLA = "00"
-
-        val EMPTY_RESPONSE = "00000000000000000000000000000000000000000000000000000000009000"
-        val CARD_CALYPSO = "6F228408315449432E494341A516BF0C13C70800000000C12A45575307060A070620042D9000"
-        val CARD_ENVIRONMENT = "06EC1EA00125BDBD529120030214000000000000000009218CC00000009000"
-        var CARD_COUNTERS = "0014DC00000000000000000000000000000000000000000000000000009000"
-        val CARD_EVENTS = arrayOf("006223543C0F7AA8781EF4EEEEEEEB69EA6523B06849015B1D4B00E8829000", "01E24354352592A86A4B24EEEEEEEA6D1DE002A4BB15B1D4A8093820009000", "01E22354159EA2A82B3D44EEEEEEEA6D39600600E818B30CAC093820009000", "00622354117DD2A822FBA4EEEEEEEB6A90252470986B198B1D4B00E8829000", "01E23B54117CBAA7D654C4EEEEEEE207E90000000000000000000000009000", "01E23354117CB800000004EEEEEEE207E90000000000000000000000009000")
-        val CARD_CONTRACTS = arrayOf("0FE087AC680FBF49B691401C32064780000000000000000000000000B79000", "00000000000000000000000000000000000000000000000000000000009000", "00000000000000000000000000000000000000000000000000000000009000", "00000000000000000000000000000000000000000000000000000000009000", "00000000000000000000000000000000000000000000000000000000009000", "00000000000000000000000000000000000000000000000000000000009000", "00000000000000000000000000000000000000000000000000000000009000", "00000000000000000000000000000000000000000000000000000000009000")
-        val CARD_SPECIAL_EVENTS = arrayOf("006223543C0F7AA8781EF4EEEEEEEB69EA6523B06849015B1D4B00E8829000", "00000000000000000000000000000000000000000000000000000000009000", "00000000000000000000000000000000000000000000000000000000009000", "00000000000000000000000000000000000000000000000000000000009000", "00000000000000000000000000000000000000000000000000000000009000", "00000000000000000000000000000000000000000000000000000000009000", "00000000000000000000000000000000000000000000000000000000009000", "00000000000000000000000000000000000000000000000000000000009000")
-        var CARD_ENCRYPTION_ANSWER = "60030D16ED200006EC1EA00125BDBD529120030214000000000000000009218CC00000009000"
     }
 
-    private fun getLocalIpAddress(): String? {
-        try {
-            val en = NetworkInterface.getNetworkInterfaces()
-            while (en.hasMoreElements()) {
-                val intf = en.nextElement()
-                val enumIpAddr = intf.getInetAddresses()
-                while (enumIpAddr.hasMoreElements()) {
-                    val inetAddress = enumIpAddr.nextElement()
-                    if (!inetAddress.isLoopbackAddress()) {
-                        return inetAddress.getHostAddress().toString()
-                    }
-                }
-            }
-        } catch (ex: SocketException) {
-            Log.e("ServerActivity", ex.toString())
-        }
-
-        return null
-    }
+    var globalResponse = ""
+    var globalCommand = ""
+    lateinit var serverSocket : ServerSocket
+    lateinit var socket : Socket
+    var ip = ""
 
     override fun onDeactivated(reason: Int) {
         Log.d(TAG, "Deactivated: " + reason)
     }
 
-    override fun onCreate(){
-        Log.d(TAG, "started")
-    }
-
     inner class ServerThread : Runnable {
 
+        fun socketInit(){
+            serverSocket = ServerSocket(SERVERPORT)
+            socket = serverSocket.accept()
+        }
+
         override fun run() {
-            if(!this@HostCardEmulatorService::serverSocket.isInitialized){
-                serverSocket = ServerSocket(SERVERPORT)
-                socket = serverSocket.accept()
-            }
+            if(!this@HostCardEmulatorService::serverSocket.isInitialized)
+                socketInit()
+
             while (true) {
                 try {
                     val inp = DataInputStream(socket.getInputStream())
@@ -91,7 +67,7 @@ class HostCardEmulatorService: HostApduService() {
                     globalResponse = inp.readUTF()
                     break
                 }
-                catch(e : Exception){
+                catch(e : Exception) {
                     var mye = e
                 }
             }
@@ -102,6 +78,9 @@ class HostCardEmulatorService: HostApduService() {
         if (commandApdu == null)
             return Utils.hexStringToByteArray(STATUS_FAILED)
 
+
+        ip = MainActivity().myTextInput.text.toString()
+        Log.d(TAG, ip)
         val hexCommandApdu = Utils.toHex(commandApdu)
         globalCommand = hexCommandApdu
         var serverInit = Thread(ServerThread())

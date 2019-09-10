@@ -8,6 +8,7 @@ class Utils {
 
     companion object {
         private val HEX_CHARS = "0123456789ABCDEF"
+        @JvmStatic
         fun hexStringToByteArray(data: String) : ByteArray {
 
             val result = ByteArray(data.length / 2)
@@ -24,6 +25,7 @@ class Utils {
         }
 
         private val HEX_CHARS_ARRAY = "0123456789ABCDEF".toCharArray()
+        @JvmStatic
         fun toHex(byteArray: ByteArray) : String {
             val result = StringBuffer()
 

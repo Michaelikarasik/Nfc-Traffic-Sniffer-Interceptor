@@ -122,10 +122,4 @@ class categoryList{
 }
 
 public class CommandPipeline {
-    public static void main() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        methodMap.put("0", CommandPipeline.class.getMethod("stringEqual", String.class, String.class));
-        CommandPipeline myPipeline = new CommandPipeline();
-        Method method = CommandPipeline.class.getMethod("stringEqual", String.class, String.class);
-        method.invoke(myPipeline, new String[] {"hey", "hello"});
-    }
 }

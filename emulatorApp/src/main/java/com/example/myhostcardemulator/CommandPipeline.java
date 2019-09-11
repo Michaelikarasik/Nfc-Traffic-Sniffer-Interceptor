@@ -3,7 +3,6 @@ package com.example.myhostcardemulator;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Currency;
 import java.util.List;
 
 /**
@@ -18,7 +17,7 @@ class MethodCategory {
     private static MethodCategory category_instance = new MethodCategory();
 
     /**
-    * This class holds a method's name and the types of its params for use with Class.getMethod() method
+     * This class holds a method's name and the types of its params for use with Class.getMethod() method
      */
     protected class MethodSpecs {
         private String name;
@@ -26,16 +25,18 @@ class MethodCategory {
 
         /**
          * Method spec constructor
-         * @param name The method's name
+         *
+         * @param name  The method's name
          * @param types The method's param types
          */
-        public MethodSpecs(String name, Class[] types){
+        public MethodSpecs(String name, Class[] types) {
             this.name = name;
             this.typeArray = types;
         }
 
         /**
          * Name getter
+         *
          * @return The name of the method specified
          */
         public String getName() {
@@ -44,6 +45,7 @@ class MethodCategory {
 
         /**
          * Type array getter
+         *
          * @return An array of the method's param types
          */
         public Class[] getTypeArray() {
@@ -75,20 +77,25 @@ class MethodCategory {
     /**
      * @return Whether or not the category is a control category
      */
-    public boolean isControlCat(){
+    public boolean isControlCat() {
         return isControlCat;
     }
 
     /**
      * Method for setting up the category's method array
+     *
      * @param methods This is an array of methodSpecs each specifying a different function
      */
-    protected void setupMethodArr(MethodSpecs ...methods) throws NoSuchMethodException {
+    protected void setupMethodArr(MethodSpecs... methods) throws NoSuchMethodException {
         Method[] newMethodArr = new Method[methods.length];
-        for(int i = 0; i < methods.length; i++){
+        for (int i = 0; i < methods.length; i++) {
             newMethodArr[i] = this.getClass().getMethod(methods[i].getName(), methods[i].getTypeArray());
         }
         methodArr = newMethodArr;
+    }
+
+    public MethodSpecs newMethodSpecs(String name, Class... params){
+        return new MethodSpecs(name, params);
     }
 }
 
@@ -173,7 +180,7 @@ class CategoryList {
          */
         private ComparisonCategory() throws NoSuchMethodException {
             catName = "Comparison Category";
-            setupMethodArr(new MethodSpecs("stringEqual", new Class[] {PipeParams.class, String.class}), new MethodSpecs("stringStartsWith", new Class[] {PipeParams.class, String.class}));
+            setupMethodArr(newMethodSpecs("stringEqual", PipeParams.class, String.class), newMethodSpecs("stringStartsWith", PipeParams.class, String.class), newMethodSpecs("stringContains", PipeParams.class, String.class));
         }
 
         /**
@@ -188,13 +195,23 @@ class CategoryList {
         }
 
         /**
-         * Compares two strings
+         * Checks if one string starts with another
          * @param params Result of prior pipeline command
          * @param comparison Second string
          * @return True if first string starts with second string, False otherwise
          */
         public void stringStartsWith(PipeParams params, String comparison) {
             Boolean result = params.getCurrentString().startsWith(comparison);
+            params.setDoContinue(result);
+        }
+
+        /**
+         * Check if one string contains another
+         * @param params Result of prior pipeline command
+         * @param comparison Seconds string for checking if the param string contains it
+         */
+        public void stringContains(PipeParams params, String comparison){
+            Boolean result = params.getCurrentString().contains(comparison);
             params.setDoContinue(result);
         }
     }
@@ -206,7 +223,7 @@ class CategoryList {
          */
         private ReplacementCategory() throws NoSuchMethodException {
             catName = "Replacement Category";
-            setupMethodArr(new MethodSpecs("replaceStringWhole", new Class[] {PipeParams.class, String.class}), new MethodSpecs("replaceStringRange", new Class[] {PipeParams.class, String.class, int.class, int.class}));
+            setupMethodArr(newMethodSpecs("replaceStringWhole", PipeParams.class, String.class), newMethodSpecs("replaceStringRange", PipeParams.class, String.class, int.class, int.class));
         }
 
         /**
@@ -247,17 +264,26 @@ class CategoryList {
          */
         private ControlCategory() throws NoSuchMethodException {
             catName = "Control Category";
-            setupMethodArr(new MethodSpecs("stopIf", new Class[]{PipeParams.class}));
+            setupMethodArr(newMethodSpecs("stopIf", PipeParams.class), newMethodSpecs("doElse", PipeParams.class));
             isControlCat = true;
         }
 
         /**
-         * Method to close an if statmenet and continue
+         * Method to close an if statement and continue pipeline flow
          * the pipeline execution
          * @param params Result of prior pipeline command
          */
         public void stopIf(PipeParams params){
             params.setDoContinue(true);
+        }
+
+        /**
+         * Else statement implementation method to continue pipeline
+         * flow if it was previously paused and stop it otherwise
+         * @param params Result of prior pipeline command
+         */
+        public void doElse(PipeParams params){
+            params.setDoContinue(!params.getDoContinue());
         }
     }
 }

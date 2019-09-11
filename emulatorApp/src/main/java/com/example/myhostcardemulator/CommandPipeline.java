@@ -2,6 +2,8 @@ package com.example.myhostcardemulator;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
 * Class specifying methods and variables for every pipeline method category
@@ -11,6 +13,7 @@ class MethodCategory {
     protected int catNum;
     protected Method[] methodArr;
     protected String catName;
+    protected boolean isControlCat = false;
     private static MethodCategory category_instance = new MethodCategory();
 
     /**
@@ -69,6 +72,13 @@ class MethodCategory {
     }
 
     /**
+     * @return Whether or not the category is a control category
+     */
+    public boolean isControlCat(){
+        return isControlCat;
+    }
+
+    /**
      * Method for setting up the category's method array
      * @param methods This is an array of methodSpecs each specifying a different function
      */
@@ -115,8 +125,8 @@ class PipeParams{
  */
 class CategoryList {
 
-    static MethodCategory[] categoryArray;
-    static CategoryList singleCategoryList = null;
+    private static MethodCategory[] categoryArray;
+    private static CategoryList singleCategoryList = null;
 
     private CategoryList() throws NoSuchMethodException {
         categoryArray = new MethodCategory[] {new ComparisonCategory(), new ReplacementCategory()};
@@ -125,9 +135,8 @@ class CategoryList {
     /**
      * Singleton instance getter
      * @return instance of the single CategoryList
-     * @throws NoSuchMethodException
      */
-    public CategoryList getInstance() throws NoSuchMethodException {
+    public static CategoryList getInstance() throws NoSuchMethodException {
         if(singleCategoryList == null)
             singleCategoryList = new CategoryList();
         return singleCategoryList;
@@ -139,9 +148,18 @@ class CategoryList {
      * @param method Number of the method inside the category
      * @return The specified method
      */
-    public Method retrieveMethod(int category, int method){
-        Method myMethod = categoryArray[category].getMethodArr()[method];
+    public Method retrieveMethod(MethodCategory category, int method){
+        Method myMethod = category.getMethodArr()[method];
         return myMethod;
+    }
+
+    /**
+     * Method for retrieving a category object
+     * @param catNum Number of category in list
+     * @return
+     */
+    public MethodCategory retreiveMethodCategory(int catNum){
+        return categoryArray[catNum];
     }
 
     /**
@@ -213,20 +231,50 @@ class CategoryList {
             params.setCurrentString(result);
         }
     }
+
+
+    /**
+     * Category holding all method which control the pipeline's flow of execution
+     * The methods in this category will execute whether or not the pipeline is
+     * currently stopped (for example when an if condition returns false)
+     */
+    private class ControlCategory extends MethodCategory{
+
+        /**
+         * Constructor setting up the category's number, name and method array
+         */
+        private ControlCategory() throws NoSuchMethodException {
+            catName = "Control Category";
+            setupMethodArr(new MethodSpecs("stringEqual", new Class[] {PipeParams.class, String.class}), new MethodSpecs("stringStartsWith", new Class[] {PipeParams.class, String.class}));
+            isControlCat = true;
+        }
+
+        /**
+         * Method to close an if statmenet and continue
+         * the pipeline execution
+         * @param params Result of prior pipeline command
+         */
+        public void stopIf(PipeParams params){
+            params.setDoContinue(true);
+        }
+    }
 }
 
+/**
+ * Class representing a single method execution in the pipeline
+ */
 class SinglePipeStep{
     private Method stepMethod;
     private PipeParams pipeParams;
     private Object[] params;
-    private Object parentObject;
+    private MethodCategory parentObject;
 
     /**
      * Single Pipe Step constructor
      * @param method Method to be called on step
      * @param params Params to be passed on to method
      */
-    public SinglePipeStep(Method method, PipeParams pipeParams, Object[] params, Object parentObject){
+    public SinglePipeStep(Method method, MethodCategory parentObject, Object[] params, PipeParams pipeParams){
         stepMethod = method;
         this.parentObject = parentObject;
         this.pipeParams = pipeParams;
@@ -239,32 +287,94 @@ class SinglePipeStep{
     }
 
     /**
-     * Invoke step's method with step's params on step's parent object
+     * Invoke step's method with step's params on step's parent object.
+     * Unless it's a control category step, the step will only execute
+     * when the pipeline is set to continue (based on its pipeParams)
      * @throws InvocationTargetException
-     * @throws IllegalAccessException
      */
     public void doStep() throws InvocationTargetException, IllegalAccessException {
-        if(pipeParams.getDoContinue())
+        if(pipeParams.getDoContinue() || parentObject.isControlCat())
             stepMethod.invoke(parentObject, params);
     }
 }
 
 public class CommandPipeline {
     private PipeParams currentPipeParams;
-    private SinglePipeStep[] fullPipeline;
+    private List<SinglePipeStep> fullPipeline;
+    private CategoryList catList;
 
-    /*public CreateCommandPipeline(){
+    /**
+     * Constructor
+     */
+    public CommandPipeline() throws NoSuchMethodException {
+        fullPipeline = new ArrayList<>();
+        catList = CategoryList.getInstance();
+    }
 
-    }*/
+    /**
+     * Creates a pipeline step based
+     * @param catNum Number of the category the step's method is in
+     * @param methNum Number of the step's method inside the category
+     * @param params Parameters to pass onto method
+     * @return The created pipeline step
+     */
+    public SinglePipeStep createPipelineStep(int catNum, int methNum, Object[] params){
+        MethodCategory categoryObj = catList.retreiveMethodCategory(catNum);
+        Method method = catList.retrieveMethod(categoryObj, methNum);
+        SinglePipeStep pipeStep = new SinglePipeStep(method, categoryObj, params, currentPipeParams);
+        return pipeStep;
+    }
+
+    /**
+     * Creates a pipeline step and adds it to the end of the pipeline
+     * @param catNum Number of the category the step's method is in
+     * @param methNum Number of the step's method inside the category
+     * @param params Parameters to pass onto method
+     */
+    public void addStepToEnd(int catNum, int methNum, Object[] params){
+        SinglePipeStep newStep = createPipelineStep(catNum, methNum, params);
+        fullPipeline.add(newStep);
+    }
+
+    /**
+     * Creates a pipeline step and adds it to the middle of the pipeline
+     * @param catNum Number of the category the step's method is in
+     * @param methNum Number of the step's method inside the category
+     * @param params Parameters to pass onto method
+     * @param index Index to add the new step to
+     */
+    public void addStepToMiddle(int catNum, int methNum, Object[] params, int index){
+        SinglePipeStep newStep = createPipelineStep(catNum, methNum, params);
+        index = Math.min(index, fullPipeline.size());
+        fullPipeline.add(index, newStep);
+    }
+
+    /**
+     * Adds a pipeline step to the end of the pipeline
+     * @param newStep The pipeline step to add
+     */
+    public void addStepToEnd(SinglePipeStep newStep){
+        fullPipeline.add(newStep);
+    }
+
+    /**
+     * Adds a pipeline step to the middle of the pipeline
+     * @param newStep The pipeline step to add
+     * @param index Index to add the step to
+     */
+    public void addStepToMiddle(SinglePipeStep newStep, int index){
+        index = Math.min(index, fullPipeline.size());
+        fullPipeline.add(index, newStep);
+    }
 
     /**
      * Performs all steps of pipeline
      * @throws InvocationTargetException
-     * @throws IllegalAccessException
      */
-    public void performPipeline() throws InvocationTargetException, IllegalAccessException {
+    public String performPipeline() throws InvocationTargetException, IllegalAccessException {
         for(SinglePipeStep step : fullPipeline){
             step.doStep();
         }
+        return currentPipeParams.getCurrentString();
     }
 }

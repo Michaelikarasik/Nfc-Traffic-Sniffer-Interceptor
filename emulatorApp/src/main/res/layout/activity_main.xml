@@ -8,7 +8,7 @@
         tools:context=".MainActivity">
 
     <EditText
-            android:id="@+id/textInput"
+            android:id="@+id/myTextInput"
             android:layout_height="wrap_content"
             android:layout_width="match_parent"
             android:inputType="text"

@@ -94,8 +94,8 @@ class HostCardEmulatorService extends HostApduService {
      */
     public void sendApduCommand(String query) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         myPipeline = new CommandPipeline();
-        myPipeline.addStepToEnd(0, 1, new Object[]{"00A4"});
-        myPipeline.addStepToEnd(1, 0, new Object[]{"00A40000"});
+        myPipeline.addStepToEnd(0, 1, new Object[]{"A4"});
+        myPipeline.addStepToEnd(1, 2, new Object[]{"00A40000", 2});
         myPipeline.addStepToEnd(2, 0, new Object[]{});
         query = myPipeline.performPipeline(query);
         Thread commandSender = new Thread(new ServerThread(query));

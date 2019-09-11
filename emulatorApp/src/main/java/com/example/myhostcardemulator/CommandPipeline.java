@@ -223,7 +223,7 @@ class CategoryList {
          */
         private ReplacementCategory() throws NoSuchMethodException {
             catName = "Replacement Category";
-            setupMethodArr(newMethodSpecs("replaceStringWhole", PipeParams.class, String.class), newMethodSpecs("replaceStringRange", PipeParams.class, String.class, int.class, int.class));
+            setupMethodArr(newMethodSpecs("replaceStringWhole", PipeParams.class, String.class), newMethodSpecs("replaceStringRange", PipeParams.class, String.class, int.class, int.class), newMethodSpecs("replaceStringFromEnd", PipeParams.class, String.class, int.class));
         }
 
         /**
@@ -247,6 +247,13 @@ class CategoryList {
             end = Math.min(newString.length(), end);
             int length = end - start;
             String result = params.getCurrentString().substring(start, end) + newString.substring(0, length);
+            params.setCurrentString(result);
+        }
+
+        public void replaceStringFromEnd(PipeParams params, String newString, int start){
+            start = Math.min(params.getCurrentString().length(), start);
+            start = params.getCurrentString().length() - start;
+            String result = params.getCurrentString().substring(0, start) + newString;
             params.setCurrentString(result);
         }
     }

@@ -3,6 +3,7 @@ package com.example.myhostcardemulator;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Currency;
 import java.util.List;
 
 /**
@@ -87,6 +88,7 @@ class MethodCategory {
         for(int i = 0; i < methods.length; i++){
             newMethodArr[i] = this.getClass().getMethod(methods[i].getName(), methods[i].getTypeArray());
         }
+        methodArr = newMethodArr;
     }
 }
 
@@ -129,7 +131,7 @@ class CategoryList {
     private static CategoryList singleCategoryList = null;
 
     private CategoryList() throws NoSuchMethodException {
-        categoryArray = new MethodCategory[] {new ComparisonCategory(), new ReplacementCategory()};
+        categoryArray = new MethodCategory[] {new ComparisonCategory(), new ReplacementCategory(), new ControlCategory()};
     }
 
     /**
@@ -245,7 +247,7 @@ class CategoryList {
          */
         private ControlCategory() throws NoSuchMethodException {
             catName = "Control Category";
-            setupMethodArr(new MethodSpecs("stringEqual", new Class[] {PipeParams.class, String.class}), new MethodSpecs("stringStartsWith", new Class[] {PipeParams.class, String.class}));
+            setupMethodArr(new MethodSpecs("stopIf", new Class[]{PipeParams.class}));
             isControlCat = true;
         }
 
@@ -293,8 +295,9 @@ class SinglePipeStep{
      * @throws InvocationTargetException
      */
     public void doStep() throws InvocationTargetException, IllegalAccessException {
-        if(pipeParams.getDoContinue() || parentObject.isControlCat())
+        if(pipeParams.getDoContinue() || parentObject.isControlCat()) {
             stepMethod.invoke(parentObject, params);
+        }
     }
 }
 
@@ -307,6 +310,7 @@ public class CommandPipeline {
      * Constructor
      */
     public CommandPipeline() throws NoSuchMethodException {
+        currentPipeParams = new PipeParams("");
         fullPipeline = new ArrayList<>();
         catList = CategoryList.getInstance();
     }
@@ -371,7 +375,8 @@ public class CommandPipeline {
      * Performs all steps of pipeline
      * @throws InvocationTargetException
      */
-    public String performPipeline() throws InvocationTargetException, IllegalAccessException {
+    public String performPipeline(String query) throws InvocationTargetException, IllegalAccessException {
+        currentPipeParams.setCurrentString(query);
         for(SinglePipeStep step : fullPipeline){
             step.doStep();
         }

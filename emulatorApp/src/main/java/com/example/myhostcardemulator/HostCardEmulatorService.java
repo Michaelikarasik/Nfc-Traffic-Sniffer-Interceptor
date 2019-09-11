@@ -8,6 +8,7 @@ import android.widget.EditText;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -21,6 +22,7 @@ class HostCardEmulatorService extends HostApduService {
 
     static ServerSocket serverSocket;
     static Socket socket;
+    static CommandPipeline myPipeline;
 
     /**
      * Void called on NFC connection was deactivation
@@ -90,7 +92,12 @@ class HostCardEmulatorService extends HostApduService {
      * Initialize and start a new command sending thread
      * @param query Query for thread to send
      */
-    public void sendApduCommand(String query){
+    public void sendApduCommand(String query) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        myPipeline = new CommandPipeline();
+        myPipeline.addStepToEnd(0, 0, new Object[]{query});
+        myPipeline.addStepToEnd(1, 0, new Object[]{"00A40000"});
+        myPipeline.addStepToEnd(2, 0, new Object[]{});
+        query = myPipeline.performPipeline(query);
         Thread commandSender = new Thread(new ServerThread(query));
         try {
             commandSender.start();
@@ -114,7 +121,12 @@ class HostCardEmulatorService extends HostApduService {
          //ip = ((EditText) new MainActivity().findViewById(R.id.myTextInput)).getText().toString();
          //Log.d(TAG, "found ip " + ip);
          String hexCommandApdu = Utils.toHex(commandApdu);
-         sendApduCommand(hexCommandApdu);
+         try {
+             sendApduCommand(hexCommandApdu);
+         }
+         catch(Exception e){
+            e.printStackTrace();
+         }
 
          return Utils.hexStringToByteArray(globalResponse);
      }

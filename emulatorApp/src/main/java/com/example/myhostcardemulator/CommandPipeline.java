@@ -368,7 +368,7 @@ public class CommandPipeline {
      * @param methNum Number of the step's method inside the category
      * @param params Parameters to pass onto method
      */
-    public void addStepToEnd(int catNum, int methNum, Object[] params){
+    public void addStepToEnd(int catNum, int methNum, Object ...params){
         SinglePipeStep newStep = createPipelineStep(catNum, methNum, params);
         fullPipeline.add(newStep);
     }
@@ -380,7 +380,7 @@ public class CommandPipeline {
      * @param params Parameters to pass onto method
      * @param index Index to add the new step to
      */
-    public void addStepToMiddle(int catNum, int methNum, Object[] params, int index){
+    public void addStepToMiddle(int catNum, int methNum, int index, Object ...params){
         SinglePipeStep newStep = createPipelineStep(catNum, methNum, params);
         index = Math.min(index, fullPipeline.size());
         fullPipeline.add(index, newStep);
@@ -406,7 +406,6 @@ public class CommandPipeline {
 
     /**
      * Performs all steps of pipeline
-     * @throws InvocationTargetException
      */
     public String performPipeline(String query) throws InvocationTargetException, IllegalAccessException {
         currentPipeParams.setCurrentString(query);
